@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "notas-sdk57",
-    "slug": "notas-sdk57",
+    "name": "Notas",
+    "slug": "notas",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -10,6 +10,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.joao.notas",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",

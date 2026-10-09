@@ -338,7 +338,18 @@ export default function Editor({ notebook, onChange, onBack }) {
   const clearPage = () => Alert.alert('Limpar página?', 'Todos os traços serão removidos.', [
     { text: 'Cancelar', style: 'cancel' }, { text: 'Limpar', style: 'destructive', onPress: () => commit([]) },
   ]);
-  const exportSvg = () => Share.share({ message: pageSvg(page) });
+  const safeName = () => (notebook.title.replace(/[^\w\-]+/g, '_').replace(/^_+|_+$/g, '') || 'caderno');
+  // Salva o arquivo na pasta do app e compartilha a partir dela (o Expo Go não deixa
+  // compartilhar arquivos do cache; assim funciona no Expo Go e no APK).
+  const exportSvg = async () => {
+    try {
+      const uri = `${FileSystem.documentDirectory}${safeName()}_pagina${pageIdx + 1}.svg`;
+      await FileSystem.writeAsStringAsync(uri, pageSvg(page));
+      await Sharing.shareAsync(uri, { mimeType: 'image/svg+xml', dialogTitle: notebook.title });
+    } catch (err) {
+      Alert.alert('Não foi possível exportar', String(err.message || err));
+    }
+  };
   const exportPdf = async () => {
     try {
       setBusy(true);
@@ -346,10 +357,12 @@ export default function Editor({ notebook, onChange, onBack }) {
       for (const p of notebook.pages)
         images.push(p.bg ? await FileSystem.readAsStringAsync(p.bg, { encoding: 'base64' }) : null);
       const first = notebook.pages[0];
-      const { uri } = await Print.printToFileAsync({
-        html: notebookHtml(notebook.pages, images), width: first.w, height: Math.round(first.h),
+      const { base64 } = await Print.printToFileAsync({
+        html: notebookHtml(notebook.pages, images), width: first.w, height: Math.round(first.h), base64: true,
       });
-      await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: notebook.title });
+      const uri = `${FileSystem.documentDirectory}${safeName()}.pdf`;
+      await FileSystem.writeAsStringAsync(uri, base64, { encoding: 'base64' });
+      await Sharing.shareAsync(uri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf', dialogTitle: notebook.title });
     } catch (e) {
       Alert.alert('Não foi possível exportar', String(e.message || e));
     } finally { setBusy(false); }
